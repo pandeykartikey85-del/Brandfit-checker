@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brand-fit-checker-v1';
+const CACHE_NAME = 'brand-fit-checker-v2';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -37,8 +37,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first for API calls, cache-first for static assets
-  if (event.request.url.includes('googleapis.com') || event.request.url.includes('supabase')) {
+  // Always bypass Service Worker for API calls and non-GET requests
+  if (
+    event.request.method !== 'GET' ||
+    event.request.url.includes('/api/') ||
+    event.request.url.includes('googleapis.com') ||
+    event.request.url.includes('supabase')
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }
