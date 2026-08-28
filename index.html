@@ -44,25 +44,21 @@
 
   <div id="settings-modal" class="settings-modal">
     <button id="settings-close-btn" class="settings-close" aria-label="Close settings">&times;</button>
-    <h2>Setup</h2>
+    <h2>Settings</h2>
     <p class="settings-description">
-      Enter your API keys to get started. Keys are stored locally in your browser and are never shared.
+      Brand Fit Checker is ready to use. AI evaluations are powered securely by the server. Connect Supabase to sync your history and rules across devices (optional).
     </p>
     <form id="settings-form">
       <div class="form-group">
-        <label for="input-gemini-key">Gemini API Key</label>
-        <input type="password" id="input-gemini-key" placeholder="AIza…" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label for="input-supabase-url">Supabase Project URL</label>
+        <label for="input-supabase-url">Supabase Project URL (Optional)</label>
         <input type="url" id="input-supabase-url" placeholder="https://xxxxx.supabase.co" autocomplete="off">
       </div>
       <div class="form-group">
-        <label for="input-supabase-key">Supabase Anon Key</label>
+        <label for="input-supabase-key">Supabase Anon Key (Optional)</label>
         <input type="password" id="input-supabase-key" placeholder="eyJhbG…" autocomplete="off">
       </div>
       <div id="settings-error" class="settings-error"></div>
-      <button type="submit" class="btn btn-primary">Save &amp; Continue</button>
+      <button type="submit" class="btn btn-primary">Save Settings</button>
     </form>
   </div>
 
