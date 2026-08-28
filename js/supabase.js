@@ -6,92 +6,172 @@
 
 let sbClient = null;
 
+const LOCAL_EVALS_KEY = 'bfc_local_evaluations';
+const LOCAL_RULES_KEY = 'bfc_local_rules';
+
 function initSupabase() {
   const config = getConfig();
-  if (config.supabaseUrl && config.supabaseKey) {
-    sbClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+  if (typeof supabase !== 'undefined' && isSupabaseConfigured()) {
+    try {
+      sbClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+      console.log('[Supabase] Initialized client for:', config.supabaseUrl);
+    } catch (e) {
+      console.warn('[Supabase] Client initialization failed, using local storage fallback:', e);
+      sbClient = null;
+    }
+  } else {
+    sbClient = null;
   }
   return sbClient;
 }
 
 function getSupabaseClient() {
-  if (!sbClient) initSupabase();
+  if (!sbClient && isSupabaseConfigured()) {
+    initSupabase();
+  }
   return sbClient;
+}
+
+// --- Evaluations Local Helpers ---
+
+function getLocalEvaluations() {
+  try {
+    const raw = localStorage.getItem(LOCAL_EVALS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalEvaluations(evals) {
+  try {
+    localStorage.setItem(LOCAL_EVALS_KEY, JSON.stringify(evals));
+  } catch (e) {
+    console.warn('Could not save local evaluations:', e);
+  }
 }
 
 // --- Evaluations ---
 
 async function saveEvaluation(pitchText, profileText, verdict, reasoning) {
+  const newEval = {
+    id: `eval_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    session_id: getSessionId(),
+    pitch_text: pitchText,
+    profile_text: profileText,
+    verdict: verdict,
+    reasoning: reasoning,
+    created_at: new Date().toISOString()
+  };
+
+  // Always save locally first
+  const localList = getLocalEvaluations();
+  localList.unshift(newEval);
+  saveLocalEvaluations(localList);
+
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase not configured');
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('evaluations')
+        .insert([{
+          session_id: getSessionId(),
+          pitch_text: pitchText,
+          profile_text: profileText,
+          verdict: verdict,
+          reasoning: reasoning
+        }])
+        .select();
 
-  const { data, error } = await client
-    .from('evaluations')
-    .insert([{
-      session_id: getSessionId(),
-      pitch_text: pitchText,
-      profile_text: profileText,
-      verdict: verdict,
-      reasoning: reasoning
-    }])
-    .select();
+      if (error) {
+        console.warn('[Supabase] Save evaluation error, stored locally:', error.message);
+      } else if (data && data.length > 0) {
+        return data;
+      }
+    } catch (sbErr) {
+      console.warn('[Supabase] Save evaluation exception, stored locally:', sbErr);
+    }
+  }
 
-  if (error) throw error;
-  return data;
+  return [newEval];
 }
 
 async function getEvaluations(limit = 50) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase not configured');
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('evaluations')
+        .select('*')
+        .eq('session_id', getSessionId())
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-  const { data, error } = await client
-    .from('evaluations')
-    .select('*')
-    .eq('session_id', getSessionId())
-    .order('created_at', { ascending: false })
-    .limit(limit);
+      if (!error && data && data.length > 0) {
+        saveLocalEvaluations(data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('[Supabase] Get evaluations exception, using local fallback:', e);
+    }
+  }
 
-  if (error) throw error;
-  return data || [];
+  const localList = getLocalEvaluations();
+  return localList.slice(0, limit);
 }
 
 // --- Personal Rules ---
 
 async function saveUserRules(rulesText) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase not configured');
-
   const sessionId = getSessionId();
+  try {
+    localStorage.setItem(LOCAL_RULES_KEY, rulesText);
+  } catch (e) {}
 
-  const { data, error } = await client
-    .from('rules')
-    .upsert(
-      {
-        session_id: sessionId,
-        rules_text: rulesText,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'session_id' }
-    )
-    .select();
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('rules')
+        .upsert(
+          {
+            session_id: sessionId,
+            rules_text: rulesText,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'session_id' }
+        )
+        .select();
 
-  if (error) throw error;
-  return data;
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn('[Supabase] Save rules error, stored locally:', e);
+    }
+  }
+
+  return [{ session_id: sessionId, rules_text: rulesText }];
 }
 
 async function getUserRules() {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase not configured');
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('rules')
+        .select('rules_text')
+        .eq('session_id', getSessionId())
+        .single();
 
-  const { data, error } = await client
-    .from('rules')
-    .select('rules_text')
-    .eq('session_id', getSessionId())
-    .single();
+      if (!error && data?.rules_text !== undefined) {
+        try { localStorage.setItem(LOCAL_RULES_KEY, data.rules_text); } catch (e) {}
+        return data.rules_text;
+      }
+    } catch (e) {
+      console.warn('[Supabase] Get rules error, using local fallback:', e);
+    }
+  }
 
-  // PGRST116 = "no rows returned" — that's fine, means no rules saved yet
-  if (error && error.code !== 'PGRST116') throw error;
-  return data?.rules_text || '';
+  return localStorage.getItem(LOCAL_RULES_KEY) || '';
 }
 
 // --- Payment Tracker ---

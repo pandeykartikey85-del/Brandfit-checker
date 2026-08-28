@@ -12,12 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Initialize settings modal
   initSettings();
 
-  // 3. Check if API keys are configured
-  if (!isConfigured()) {
-    showSettingsModal(true);
-  } else {
-    initSupabase();
-  }
+  // 3. Initialize Supabase (with automatic local fallback)
+  initSupabase();
 
   // 4. Initialize navigation
   initNavigation();

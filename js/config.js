@@ -1,33 +1,53 @@
 // ============================================
-// Configuration & Settings Modal
-// Manages API keys in localStorage and
-// the setup modal for first-time configuration.
+// Configuration & Settings Module
+// Manages session ID, optional Supabase config,
+// and settings modal.
+// Gemini API is managed securely server-side.
 // ============================================
 
+// Central Supabase configuration
+// NOTE: The Supabase Anon key is a public key intended for browser clients.
+// Row Level Security (RLS) protects data access on the Supabase database.
+// NEVER put a Supabase service_role key here or in client code.
+const CENTRAL_SUPABASE_CONFIG = {
+  url: 'https://xxxxx.supabase.co', // Replace with your Supabase Project URL or keep empty for local fallback
+  anonKey: 'eyJhbG...'              // Replace with your Supabase Anon (public) Key
+};
+
 const CONFIG_KEYS = {
-  GEMINI_KEY: 'bfc_gemini_key',
   SUPABASE_URL: 'bfc_supabase_url',
   SUPABASE_KEY: 'bfc_supabase_key',
   SESSION_ID: 'bfc_session_id'
 };
 
 function getConfig() {
+  const localUrl = localStorage.getItem(CONFIG_KEYS.SUPABASE_URL);
+  const localKey = localStorage.getItem(CONFIG_KEYS.SUPABASE_KEY);
+
   return {
-    geminiKey: localStorage.getItem(CONFIG_KEYS.GEMINI_KEY) || '',
-    supabaseUrl: localStorage.getItem(CONFIG_KEYS.SUPABASE_URL) || '',
-    supabaseKey: localStorage.getItem(CONFIG_KEYS.SUPABASE_KEY) || ''
+    supabaseUrl: (localUrl && localUrl.trim()) || CENTRAL_SUPABASE_CONFIG.url || '',
+    supabaseKey: (localKey && localKey.trim()) || CENTRAL_SUPABASE_CONFIG.anonKey || ''
   };
 }
 
-function saveConfigValues(geminiKey, supabaseUrl, supabaseKey) {
-  localStorage.setItem(CONFIG_KEYS.GEMINI_KEY, geminiKey.trim());
-  localStorage.setItem(CONFIG_KEYS.SUPABASE_URL, supabaseUrl.trim());
-  localStorage.setItem(CONFIG_KEYS.SUPABASE_KEY, supabaseKey.trim());
+function saveConfigValues(supabaseUrl, supabaseKey) {
+  if (supabaseUrl) localStorage.setItem(CONFIG_KEYS.SUPABASE_URL, supabaseUrl.trim());
+  if (supabaseKey) localStorage.setItem(CONFIG_KEYS.SUPABASE_KEY, supabaseKey.trim());
 }
 
 function isConfigured() {
+  // App is always ready to use because Gemini is server-side and storage has local fallback
+  return true;
+}
+
+function isSupabaseConfigured() {
   const config = getConfig();
-  return !!(config.geminiKey && config.supabaseUrl && config.supabaseKey);
+  return !!(
+    config.supabaseUrl &&
+    config.supabaseKey &&
+    !config.supabaseUrl.includes('xxxxx') &&
+    !config.supabaseKey.includes('eyJhbG...')
+  );
 }
 
 function getSessionId() {
@@ -39,62 +59,57 @@ function getSessionId() {
   return id;
 }
 
-function showSettingsModal(forceShow = false) {
+function showSettingsModal() {
   const modal = document.getElementById('settings-modal');
   const overlay = document.getElementById('settings-overlay');
+  if (!modal || !overlay) return;
 
-  // Pre-fill with existing values
   const config = getConfig();
-  document.getElementById('input-gemini-key').value = config.geminiKey;
-  document.getElementById('input-supabase-url').value = config.supabaseUrl;
-  document.getElementById('input-supabase-key').value = config.supabaseKey;
+  const urlInput = document.getElementById('input-supabase-url');
+  const keyInput = document.getElementById('input-supabase-key');
+
+  if (urlInput) {
+    urlInput.value = config.supabaseUrl.includes('xxxxx') ? '' : config.supabaseUrl;
+  }
+  if (keyInput) {
+    keyInput.value = config.supabaseKey.includes('eyJhbG...') ? '' : config.supabaseKey;
+  }
 
   modal.classList.add('visible');
   overlay.classList.add('visible');
-
-  // If forced (first-time), hide close button
-  const closeBtn = document.getElementById('settings-close-btn');
-  if (forceShow && !isConfigured()) {
-    closeBtn.style.display = 'none';
-  } else {
-    closeBtn.style.display = '';
-  }
 }
 
 function hideSettingsModal() {
-  document.getElementById('settings-modal').classList.remove('visible');
-  document.getElementById('settings-overlay').classList.remove('visible');
+  const modal = document.getElementById('settings-modal');
+  const overlay = document.getElementById('settings-overlay');
+  if (modal) modal.classList.remove('visible');
+  if (overlay) overlay.classList.remove('visible');
 }
 
 function initSettings() {
-  // Settings form submission
-  document.getElementById('settings-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const geminiKey = document.getElementById('input-gemini-key').value;
-    const supabaseUrl = document.getElementById('input-supabase-url').value;
-    const supabaseKey = document.getElementById('input-supabase-key').value;
+  const form = document.getElementById('settings-form');
+  const closeBtn = document.getElementById('settings-close-btn');
+  const overlay = document.getElementById('settings-overlay');
+  const gearBtn = document.getElementById('settings-gear');
 
-    if (!geminiKey || !supabaseUrl || !supabaseKey) {
-      document.getElementById('settings-error').textContent = 'All fields are required.';
-      return;
-    }
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const urlInput = document.getElementById('input-supabase-url');
+      const keyInput = document.getElementById('input-supabase-key');
+      const supabaseUrl = urlInput ? urlInput.value : '';
+      const supabaseKey = keyInput ? keyInput.value : '';
 
-    document.getElementById('settings-error').textContent = '';
-    saveConfigValues(geminiKey, supabaseUrl, supabaseKey);
-    hideSettingsModal();
+      saveConfigValues(supabaseUrl, supabaseKey);
+      hideSettingsModal();
 
-    // Re-initialize Supabase client with new keys
-    initSupabase();
-  });
+      if (typeof initSupabase === 'function') {
+        initSupabase();
+      }
+    });
+  }
 
-  // Close button
-  document.getElementById('settings-close-btn').addEventListener('click', hideSettingsModal);
-
-  // Overlay click to close (only if already configured)
-  document.getElementById('settings-overlay').addEventListener('click', () => {
-    if (isConfigured()) hideSettingsModal();
-  });
-
-  // Settings gear icon
-  document.getElementById('settings-gear').addEventListener('click', () => showSettingsModal());
+  if (closeBtn) closeBtn.addEventListener('click', hideSettingsModal);
+  if (overlay) overlay.addEventListener('click', hideSettingsModal);
+  if (gearBtn) gearBtn.addEventListener('click', () => showSettingsModal());
 }

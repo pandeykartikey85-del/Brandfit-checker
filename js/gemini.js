@@ -1,14 +1,44 @@
 // ============================================
 // Gemini API Integration
-// Calls Gemini 3.6 Flash to evaluate
-// brand pitches against creator profiles and
-// personal dealbreaker rules.
+// Routes AI evaluation and analysis requests
+// through the secure serverless /api/gemini endpoint.
+// Gemini API key is stored strictly on the server.
 // ============================================
 
-async function evaluatePitch(pitchText, profileText, personalRules) {
-  const config = getConfig();
-  if (!config.geminiKey) throw new Error('Gemini API key not configured');
+async function callServerGemini(prompt, generationConfig = {}, model = 'gemini-2.5-flash') {
+  const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      prompt,
+      generationConfig: {
+        temperature: generationConfig.temperature ?? 0.2,
+        maxOutputTokens: generationConfig.maxOutputTokens ?? 2048,
+        responseMimeType: generationConfig.responseMimeType ?? 'application/json'
+      },
+      model
+    })
+  });
 
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    const errorMsg = errData.error || `AI service error (${response.status}): ${response.statusText}`;
+    throw new Error(errorMsg);
+  }
+
+  const data = await response.json();
+  const rawText = data.text || data.rawText || data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!rawText) {
+    throw new Error('No response received from AI service. Please try again.');
+  }
+
+  return rawText;
+}
+
+async function evaluatePitch(pitchText, profileText, personalRules) {
   // Build the personal rules section (if any)
   let rulesSection = '';
   if (personalRules && personalRules.trim()) {
@@ -103,32 +133,11 @@ You must respond in valid JSON matching this exact structure:
 
 Note: The "verdict" string MUST be exactly one of: "Good Fit", "Risky", or "Bad Fit". Provide 2 to 3 concise bullet points in "reasons".`;
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(config.geminiKey)}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 2048,
-        responseMimeType: 'application/json'
-      }
-    })
+  const rawText = await callServerGemini(prompt, {
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+    responseMimeType: 'application/json'
   });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Gemini API error (${response.status}): ${errData.error?.message || response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) throw new Error('No response received from Gemini. Please try again.');
 
   console.log('Gemini Raw Response:\n', rawText);
   return parseGeminiResponse(rawText);
@@ -371,9 +380,6 @@ function fallbackParse(text) {
 // ============================================
 
 async function explainContract(contractText) {
-  const config = getConfig();
-  if (!config.geminiKey) throw new Error('Gemini API key not configured');
-
   const prompt = `You are an expert contract fine-print translator for content creators and influencers.
 Analyze the following contract or agreement text. Identify any unusual, restrictive, notable, or creator-impacting clauses (e.g. perpetual usage rights, whitelisting/paid ad amplification, broad exclusivity, non-compete clauses, indemnification clauses, moral rights waivers, termination without pay, uncompensated revision demands).
 
@@ -401,32 +407,11 @@ Respond in valid JSON matching this exact structure:
   ]
 }`;
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(config.geminiKey)}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 2048,
-        responseMimeType: 'application/json'
-      }
-    })
+  const rawText = await callServerGemini(prompt, {
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+    responseMimeType: 'application/json'
   });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Gemini API error (${response.status}): ${errData.error?.message || response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) throw new Error('No response received from Gemini. Please try again.');
 
   console.log('Gemini Contract Raw Response:\n', rawText);
   return parseContractResponse(rawText);
@@ -502,9 +487,6 @@ function parseContractResponse(rawText) {
 // ============================================
 
 async function comparePitches(pitches) {
-  const config = getConfig();
-  if (!config.geminiKey) throw new Error('Gemini API key not configured');
-
   const formattedList = pitches.map((p, idx) => `
 --- PITCH #${idx + 1} ---
 Original Pitch Text:
@@ -544,32 +526,11 @@ Respond in valid JSON matching this exact structure:
   "action_plan": "Specific advice on next steps (e.g. which to accept, what to negotiate on the second choice, which to decline)."
 }`;
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(config.geminiKey)}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 2048,
-        responseMimeType: 'application/json'
-      }
-    })
+  const rawText = await callServerGemini(prompt, {
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+    responseMimeType: 'application/json'
   });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Gemini API error (${response.status}): ${errData.error?.message || response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) throw new Error('No comparison response received from Gemini.');
 
   console.log('Gemini Compare Raw Response:\n', rawText);
   return parseCompareResponse(rawText, pitches);
@@ -638,9 +599,6 @@ function parseCompareResponse(rawText, originalPitches) {
 // ============================================
 
 async function generatePatternSummary(evaluations) {
-  const config = getConfig();
-  if (!config.geminiKey) throw new Error('Gemini API key not configured');
-
   const goodFitCount = evaluations.filter(e => e.verdict === 'Good Fit').length;
   const riskyCount = evaluations.filter(e => e.verdict === 'Risky').length;
   const badFitCount = evaluations.filter(e => e.verdict === 'Bad Fit').length;
@@ -678,32 +636,11 @@ Respond in valid JSON matching this exact structure:
   ]
 }`;
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(config.geminiKey)}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json'
-      }
-    })
+  const rawText = await callServerGemini(prompt, {
+    temperature: 0.2,
+    maxOutputTokens: 1024,
+    responseMimeType: 'application/json'
   });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Gemini API error (${response.status}): ${errData.error?.message || response.statusText}`
-    );
-  }
-
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) throw new Error('No pattern summary received from Gemini.');
 
   console.log('Gemini Patterns Raw Response:\n', rawText);
   return parsePatternResponse(rawText, goodFitCount, riskyCount, badFitCount, evaluations.length);
