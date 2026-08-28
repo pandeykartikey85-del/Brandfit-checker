@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Fit Checker</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- PWA Manifest & Meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8B5CF6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BrandFit">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+</head>
+<body>
+
+  <!-- ========================================
+       WELCOME SPLASH SCREEN
+       ======================================== -->
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">BF</div>
+      <p id="splash-greeting" class="splash-greeting"></p>
+    </div>
+  </div>
+
+  <!-- Confetti container for Good Fit celebration -->
+  <div id="confetti-container" class="confetti-container"></div>
+
+  <!-- ========================================
+       SETTINGS OVERLAY & MODAL
+       ======================================== -->
+  <div id="settings-overlay" class="settings-overlay"></div>
+
+  <div id="settings-modal" class="settings-modal">
+    <button id="settings-close-btn" class="settings-close" aria-label="Close settings">&times;</button>
+    <h2>Setup</h2>
+    <p class="settings-description">
+      Enter your API keys to get started. Keys are stored locally in your browser and are never shared.
+    </p>
+    <form id="settings-form">
+      <div class="form-group">
+        <label for="input-gemini-key">Gemini API Key</label>
+        <input type="password" id="input-gemini-key" placeholder="AIza…" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="input-supabase-url">Supabase Project URL</label>
+        <input type="url" id="input-supabase-url" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="input-supabase-key">Supabase Anon Key</label>
+        <input type="password" id="input-supabase-key" placeholder="eyJhbG…" autocomplete="off">
+      </div>
+      <div id="settings-error" class="settings-error"></div>
+      <button type="submit" class="btn btn-primary">Save &amp; Continue</button>
+    </form>
+  </div>
+
+
+  <!-- Side Margin Decorative Illustrations & Mascot (Desktop/Laptop) -->
+  <div id="side-decorations-left" class="side-decorations side-left" aria-hidden="true"></div>
+  <div id="side-decorations-right" class="side-decorations side-right" aria-hidden="true"></div>
+
+  <!-- Owl Mascot Advisor Character (Desktop side margin) -->
+  <div id="mascot-container" class="mascot-container owl-state-idle" aria-label="Brand Fit Advisor Owl">
+    <div class="mascot-wrapper">
+      <div class="mascot-speech-bubble" id="mascot-speech-bubble">Ready to inspect deals! 🦉</div>
+      <svg class="mascot-owl-svg" width="110" height="120" viewBox="0 0 110 120" fill="none">
+        <!-- Pedestal / Cloud Branch -->
+        <path d="M25 110c12-4 35-5 60 0" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+        <ellipse cx="55" cy="112" rx="35" ry="4" fill="rgba(139, 92, 246, 0.15)"/>
+        
+        <!-- Feet -->
+        <path d="M42 104v6M46 104v6M64 104v6M68 104v6" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Body / Torso -->
+        <ellipse cx="55" cy="70" rx="32" ry="38" fill="#2E284A" stroke="#4C3F78" stroke-width="2"/>
+        
+        <!-- Wings -->
+        <path class="owl-wing owl-wing-left" d="M24 55c-12 10-12 28-2 36c4-8 8-16 12-24z" fill="#3D3460" stroke="#5B4C90" stroke-width="1.5"/>
+        <path class="owl-wing owl-wing-right" d="M86 55c12 10 12 28 2 36c-4-8-8-16-12-24z" fill="#3D3460" stroke="#5B4C90" stroke-width="1.5"/>
+
+        <!-- Belly Feathers / Vest -->
+        <ellipse cx="55" cy="74" rx="20" ry="24" fill="#FDFBF7" opacity="0.95"/>
+        <!-- Feather flecks (Teal & Amber) -->
+        <path d="M48 68c2 2 4 2 6 0M56 68c2 2 4 2 6 0M52 76c2 2 4 2 6 0M46 84c2 2 4 2 6 0M58 84c2 2 4 2 6 0" stroke="#0D9488" stroke-width="1.75" stroke-linecap="round"/>
+
+        <!-- Head -->
+        <circle cx="55" cy="44" r="28" fill="#3D3460" stroke="#5B4C90" stroke-width="2"/>
+        <!-- Ear Tufts / Feathers -->
+        <polygon points="32,24 24,12 40,20" fill="#2E284A" stroke="#5B4C90" stroke-width="1.5"/>
+        <polygon points="78,24 86,12 70,20" fill="#2E284A" stroke="#5B4C90" stroke-width="1.5"/>
+
+        <!-- Face Mask Area -->
+        <ellipse cx="44" cy="45" rx="14" ry="14" fill="#FDFBF7"/>
+        <ellipse cx="66" cy="45" rx="14" ry="14" fill="#FDFBF7"/>
+
+        <!-- Eyes (Neutral / Idle) -->
+        <g class="owl-eyes owl-eyes-idle">
+          <circle cx="44" cy="45" r="7.5" fill="#F59E0B"/>
+          <circle class="owl-pupil" cx="44" cy="45" r="4.5" fill="#0B0A12"/>
+          <circle cx="42" cy="43" r="1.5" fill="#FFFFFF"/>
+          
+          <circle cx="66" cy="45" r="7.5" fill="#F59E0B"/>
+          <circle class="owl-pupil" cx="66" cy="45" r="4.5" fill="#0B0A12"/>
+          <circle cx="64" cy="43" r="1.5" fill="#FFFFFF"/>
+        </g>
+
+        <!-- Eyes (Good Fit / Happy) -->
+        <g class="owl-eyes owl-eyes-good">
+          <path d="M38 46c2-5 10-5 12 0" stroke="#0B0A12" stroke-width="3" stroke-linecap="round"/>
+          <path d="M60 46c2-5 10-5 12 0" stroke="#0B0A12" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="36" cy="50" r="3" fill="#F472B6" opacity="0.6"/>
+          <circle cx="74" cy="50" r="3" fill="#F472B6" opacity="0.6"/>
+        </g>
+
+        <!-- Eyes (Risky / Inquisitive) -->
+        <g class="owl-eyes owl-eyes-risky">
+          <circle cx="44" cy="45" r="7.5" fill="#F59E0B"/>
+          <circle cx="44" cy="45" r="4.5" fill="#0B0A12"/>
+          <path d="M36 34c4-3 12 0 14 2" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+          
+          <circle cx="66" cy="46" r="6" fill="#F59E0B"/>
+          <circle cx="66" cy="46" r="3.5" fill="#0B0A12"/>
+          <path d="M59 37c3 0 10 1 12 3" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+
+        <!-- Eyes (Bad Fit / Disapproving) -->
+        <g class="owl-eyes owl-eyes-bad">
+          <circle cx="44" cy="46" r="6" fill="#EF4444"/>
+          <circle cx="44" cy="46" r="3.5" fill="#0B0A12"/>
+          <path d="M36 35l14 6" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/>
+
+          <circle cx="66" cy="46" r="6" fill="#EF4444"/>
+          <circle cx="66" cy="46" r="3.5" fill="#0B0A12"/>
+          <path d="M74 35l-14 6" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+
+        <!-- Reading Glasses (Gold Wireframe) -->
+        <g class="owl-glasses">
+          <circle cx="44" cy="45" r="12" stroke="#FBBF24" stroke-width="2" fill="rgba(139, 92, 246, 0.08)"/>
+          <circle cx="66" cy="45" r="12" stroke="#FBBF24" stroke-width="2" fill="rgba(139, 92, 246, 0.08)"/>
+          <path d="M56 45h-2" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="39" y1="39" x2="43" y2="36" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="61" y1="39" x2="65" y2="36" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        </g>
+
+        <!-- Beak -->
+        <polygon points="55,54 50,47 60,47" fill="#F59E0B" stroke="#D97706" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ========================================
+       APP
+       ======================================== -->
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="app-title">Brand Fit Checker</h1>
+          <p id="daily-quote" class="daily-quote"></p>
+        </div>
+        <div class="header-actions">
+          <button id="sound-toggle" class="header-icon-btn sound-toggle" aria-label="Toggle sound effects">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+          </button>
+          <button id="settings-gear" class="header-icon-btn settings-gear" aria-label="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83
+                       2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33
+                       1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09
+                       A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
+                       a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06
+                       A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3
+                       a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9
+                       a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83
+                       2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68
+                       a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09
+                       a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06
+                       a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06
+                       A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21
+                       a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="app-nav">
+      <a href="#" class="nav-item active" data-tab="checker">Checker</a>
+      <a href="#" class="nav-item" data-tab="contracts">Contracts</a>
+      <a href="#" class="nav-item" data-tab="payments">Payments <span id="payments-badge" class="nav-badge" style="display:none">0</span></a>
+      <a href="#" class="nav-item" data-tab="history">History</a>
+      <a href="#" class="nav-item" data-tab="rules">My Rules</a>
+    </nav>
+
+    <!-- Main Content (tab panels) -->
+    <main class="app-main">
+
+      <!-- ====== CHECKER TAB ====== -->
+      <div id="tab-checker" class="tab-content active">
+        <div class="checker-form">
+          <div class="form-group">
+            <label for="pitch-input">
+              <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+              <span>Paste the brand's pitch / message</span>
+            </label>
+            <textarea id="pitch-input" rows="8"
+                      placeholder="Paste the full email, DM, or message from the brand here…"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="profile-input">
+              <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Describe your profile</span>
+            </label>
+            <textarea id="profile-input" rows="4"
+                      placeholder="E.g., Tech reviewer on YouTube, 45K subscribers, audience is 18–34 male, primarily interested in budget smartphones and gadgets…"></textarea>
+          </div>
+          <div id="checker-error" class="checker-error"></div>
+          <button id="check-btn" class="btn btn-primary btn-check">Check Fit</button>
+          <p class="checker-supporting-text">Takes about 5 seconds · Powered by AI · Your data stays private</p>
+        </div>
+
+        <!-- Decorative empty-state illustration below form before results appear -->
+        <div id="checker-empty-placeholder" class="checker-empty-placeholder">
+          <svg class="checker-placeholder-svg" width="88" height="88" viewBox="0 0 88 88" fill="none">
+            <circle cx="44" cy="44" r="38" stroke="#8B5CF6" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.2"/>
+            <path d="M44 16L24 26V42C24 55.5 32.5 67.8 44 72C55.5 67.8 64 55.5 64 42V26L44 16Z" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+            <path d="M35 44L41 50L53 38" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+            <path d="M30 60C38 64 50 64 58 60" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
+          </svg>
+        </div>
+
+        <div id="checker-result" class="checker-result"></div>
+
+        <!-- Creator Playbook Tips -->
+        <div id="creator-playbook" class="creator-playbook-card"></div>
+      </div>
+
+      <!-- ====== CONTRACTS TAB ====== -->
+      <div id="tab-contracts" class="tab-content">
+        <div class="contracts-section">
+          <!-- Disclaimer banner -->
+          <div class="disclaimer-banner">
+            <span class="disclaimer-icon">ℹ</span>
+            <span>This is a plain-language explanation, not legal advice.</span>
+          </div>
+
+          <div class="contracts-header">
+            <svg class="tab-header-svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect x="10" y="6" width="28" height="36" rx="4" stroke="#8B5CF6" stroke-width="1.5" opacity="0.4"/>
+              <path d="M17 16h14M17 22h10M17 28h12" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+              <path d="M26 34c2-2 5-3 8-2" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+              <circle cx="36" cy="36" r="6" stroke="#8B5CF6" stroke-width="1.5" opacity="0.35"/>
+              <path d="M34 36l2 2 4-4" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+            </svg>
+            <h2>Contract Fine-Print Translator</h2>
+            <p class="text-muted">
+              Paste contract clauses or full agreement text below to translate complex legal terms,
+              exclusivity clauses, usage rights, and whitelisting into plain English.
+            </p>
+          </div>
+
+          <div class="contracts-form">
+            <div class="form-group">
+              <label for="contract-input">Paste contract text (optional)</label>
+              <textarea id="contract-input" rows="8"
+                        placeholder="Paste contract clauses or agreement text here (e.g. usage rights, exclusivity, whitelisting, indemnification, payment terms)…"></textarea>
+            </div>
+            <div id="contract-error" class="checker-error"></div>
+            <button id="explain-contract-btn" class="btn btn-primary btn-check">Explain Clauses</button>
+          </div>
+
+          <div id="contract-result" class="checker-result"></div>
+        </div>
+      </div>
+
+      <!-- ====== HISTORY TAB ====== -->
+      <div id="tab-history" class="tab-content">
+        <!-- Your Patterns Card (only shown when 5+ evaluations exist) -->
+        <div id="patterns-container" class="patterns-container"></div>
+
+        <!-- Compare Toolbar -->
+        <div id="compare-bar" class="compare-bar">
+          <div class="compare-bar-left">
+            <span id="compare-count" class="compare-count">Select 2–3 pitches to compare</span>
+          </div>
+          <button id="compare-selected-btn" class="btn btn-primary btn-compare" disabled>Compare Selected</button>
+        </div>
+
+        <!-- Compare Result -->
+        <div id="compare-result" class="checker-result"></div>
+
+        <div id="history-loading" class="history-loading">
+          <span class="spinner"></span> Loading evaluations…
+        </div>
+        <div id="history-empty" class="history-empty">
+          <svg class="empty-state-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="12" y="18" width="56" height="44" rx="6" stroke="#8B5CF6" stroke-width="2" opacity="0.4"/>
+            <line x1="22" y1="30" x2="58" y2="30" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+            <line x1="22" y1="38" x2="50" y2="38" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+            <line x1="22" y1="46" x2="42" y2="46" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.2"/>
+            <circle cx="62" cy="56" r="12" stroke="#8B5CF6" stroke-width="2" opacity="0.35"/>
+            <path d="M58 56h8M62 52v8" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+          </svg>
+          <p>No evaluations yet.</p>
+          <p class="text-muted">Try the Checker tab to evaluate your first pitch!</p>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+
+      <!-- ====== PAYMENTS TAB ====== -->
+      <div id="tab-payments" class="tab-content">
+        <div class="payments-header">
+          <div class="payments-header-text">
+            <h2>Payment Tracker</h2>
+            <p class="text-muted">
+              Keep track of accepted brand deals, expected payment dates, and overdue invoices in one place.
+            </p>
+          </div>
+        </div>
+
+        <!-- Summary Stats Bar -->
+        <div id="payments-stats-bar" class="payments-stats-bar"></div>
+
+        <!-- Loading state -->
+        <div id="payments-loading" class="payments-loading">
+          <span class="spinner"></span> Loading tracked deals…
+        </div>
+
+        <!-- Empty state -->
+        <div id="payments-empty" class="payments-empty">
+          <svg class="empty-state-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="14" y="22" width="52" height="36" rx="6" stroke="#8B5CF6" stroke-width="2" opacity="0.4"/>
+            <circle cx="40" cy="40" r="8" stroke="#8B5CF6" stroke-width="2" opacity="0.35"/>
+            <line x1="20" y1="32" x2="26" y2="32" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+            <line x1="54" y1="48" x2="60" y2="48" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+          </svg>
+          <p>No accepted deals tracked yet.</p>
+          <p class="text-muted">When you accept a brand deal, click <strong>"Mark as Accepted"</strong> in Checker or History to track its expected payment date!</p>
+        </div>
+
+        <!-- Grouped Deals Container (Overdue, Upcoming, Paid) -->
+        <div id="payments-list-container" class="payments-list-container"></div>
+      </div>
+
+      <!-- ====== MY RULES TAB ====== -->
+      <div id="tab-rules" class="tab-content">
+        <div class="rules-section">
+          <div class="rules-header">
+            <h2>My Dealbreaker Rules</h2>
+            <p class="text-muted">
+              Set your personal rules for evaluating brand pitches. These are checked automatically
+              against every new pitch before applying the general criteria.
+            </p>
+          </div>
+          <div class="form-group">
+            <textarea id="rules-input" rows="8"
+                      placeholder="Write your dealbreaker rules, one per line. For example:&#10;&#10;Never accept unpaid collaborations&#10;Minimum payment ₹15,000&#10;No exclusivity clauses over 30 days&#10;Must allow creative freedom&#10;No competing brand restrictions beyond 2 weeks"></textarea>
+          </div>
+          <div class="rules-actions">
+            <button id="save-rules-btn" class="btn btn-primary">Save Rules</button>
+            <span id="rules-status" class="rules-status"></span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+
+  <!-- ========================================
+       ACCEPT DEAL & PAYMENT DATE MODAL
+       ======================================== -->
+  <div id="payment-modal-overlay" class="settings-overlay"></div>
+
+  <div id="payment-modal" class="settings-modal payment-modal">
+    <button id="payment-modal-close" class="settings-close" aria-label="Close modal">&times;</button>
+    <div class="modal-title-with-icon">
+      <span class="modal-title-icon">🤝</span>
+      <h2>Mark Deal as Accepted</h2>
+    </div>
+    <p class="settings-description">
+      Set the expected payment date to track this deal and automatically flag overdue invoices.
+    </p>
+
+    <div class="modal-pitch-preview-box">
+      <span class="preview-label">Pitch Preview:</span>
+      <p id="payment-modal-pitch-preview" class="preview-text"></p>
+    </div>
+
+    <form id="payment-modal-form">
+      <div class="form-group">
+        <label for="payment-due-date">Expected Payment Date</label>
+        <input type="date" id="payment-due-date" required>
+      </div>
+
+      <div class="date-presets-container">
+        <span class="presets-label">Quick Presets:</span>
+        <div class="date-preset-chips">
+          <button type="button" class="btn-date-preset" data-days="15">+15 Days</button>
+          <button type="button" class="btn-date-preset selected" data-days="30">+30 Days (Net 30)</button>
+          <button type="button" class="btn-date-preset" data-days="45">+45 Days (Net 45)</button>
+          <button type="button" class="btn-date-preset" data-days="60">+60 Days (Net 60)</button>
+        </div>
+      </div>
+
+      <div class="payment-modal-actions">
+        <button type="button" id="payment-modal-cancel" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Payment Date</button>
+      </div>
+    </form>
+  </div>
+
+
+  <!-- ========================================
+       SCRIPTS
+       ======================================== -->
+  <!-- Supabase JS v2 (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- App modules (order matters: dependencies first) -->
+  <script src="js/quotes.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/gemini.js"></script>
+  <script src="js/checker.js"></script>
+  <script src="js/contracts.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/payments.js"></script>
+  <script src="js/decorations.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
