@@ -5,7 +5,7 @@
 // Gemini API key is stored strictly on the server.
 // ============================================
 
-async function callServerGemini(prompt, generationConfig = {}, model = 'gemini-2.5-flash') {
+async function callServerGemini(prompt, generationConfig = {}) {
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: {
@@ -17,8 +17,7 @@ async function callServerGemini(prompt, generationConfig = {}, model = 'gemini-2
         temperature: generationConfig.temperature ?? 0.2,
         maxOutputTokens: generationConfig.maxOutputTokens ?? 2048,
         responseMimeType: generationConfig.responseMimeType ?? 'application/json'
-      },
-      model
+      }
     })
   });
 
