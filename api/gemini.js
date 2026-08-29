@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // Vercel Serverless Function: /api/gemini
 // Handles Gemini AI requests server-side.
 // Reads GEMINI_API_KEY from environment variables.
@@ -33,15 +33,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt, generationConfig, model } = req.body || {};
+    const { prompt, generationConfig } = req.body || {};
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ error: 'Missing or empty "prompt" parameter in request body.' });
     }
 
-    // Default to gemini-2.5-flash (or override via GEMINI_MODEL env var or request)
-    const selectedModel = process.env.GEMINI_MODEL || model || 'gemini-2.5-flash';
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`;
+    // Server strictly calls gemini-3.6-flash
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey.trim()}`;
 
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
       }
     };
 
-    console.log(`[/api/gemini] Forwarding prompt to model "${selectedModel}" (prompt length: ${prompt.length} chars)`);
+    console.log(`[/api/gemini] Forwarding prompt to model "gemini-3.6-flash" (prompt length: ${prompt.length} chars)`);
 
     const googleResponse = await fetch(endpoint, {
       method: 'POST',
@@ -82,7 +81,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       text: rawText,
-      model: selectedModel,
+      model: 'gemini-3.6-flash',
       usage: data.usageMetadata || null
     });
 
