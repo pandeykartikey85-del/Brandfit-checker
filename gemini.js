@@ -33,14 +33,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt, generationConfig, model } = req.body || {};
+    const { prompt, generationConfig } = req.body || {};
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ error: 'Missing or empty "prompt" parameter in request body.' });
     }
 
-    // Default to gemini-3.6-flash (or override via GEMINI_MODEL env var or request)
-    const selectedModel = process.env.GEMINI_MODEL || model || 'gemini-3.6-flash';
+    // Server strictly controls model selection (default: gemini-3.6-flash)
+    let selectedModel = 'gemini-3.6-flash';
+    if (process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes('2.5')) {
+      selectedModel = process.env.GEMINI_MODEL.trim();
+    }
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`;
 
     const payload = {
