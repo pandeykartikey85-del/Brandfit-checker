@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // Vercel Serverless Function: /api/gemini
 // Handles Gemini AI requests server-side.
 // Reads GEMINI_API_KEY from environment variables.
@@ -39,8 +39,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing or empty "prompt" parameter in request body.' });
     }
 
-    // Default to gemini-2.5-flash (or override via GEMINI_MODEL env var or request)
-    const selectedModel = process.env.GEMINI_MODEL || model || 'gemini-2.5-flash';
+    // Default to gemini-3.6-flash (or override via GEMINI_MODEL env var or request)
+    const selectedModel = process.env.GEMINI_MODEL || model || 'gemini-3.6-flash';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`;
 
     const payload = {
