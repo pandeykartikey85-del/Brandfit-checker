@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brand-fit-checker-v2';
+const CACHE_NAME = 'brand-fit-checker-v3';
 const CORE_ASSETS = [
   '/',
   '/index.html',
