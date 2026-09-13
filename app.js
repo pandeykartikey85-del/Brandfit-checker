@@ -12,21 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Initialize settings modal
   initSettings();
 
-  // 3. Check if API keys are configured
-  if (!isConfigured()) {
-    showSettingsModal(true);
-  } else {
-    initSupabase();
-  }
+  // 3. Initialize Supabase (with automatic local fallback)
+  initSupabase();
 
-  // 4. Initialize navigation
+  // 4. Initialize navigation & mode switcher
   initNavigation();
+  initModeSwitcher();
 
   // 5. Initialize audio and mascot
   if (typeof initAudio === 'function') initAudio();
   if (typeof initMascot === 'function') initMascot();
 
   // 6. Initialize tab modules
+  if (typeof initProfile === 'function') initProfile();
+  if (typeof initBrandProfile === 'function') initBrandProfile();
   initChecker();
   initContracts();
   initHistory();
@@ -40,9 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initSideDecorations();
   }
 
-  // 8. Show splash screen on fresh page load then reveal app
-  showSplash(() => {
-    showTab('checker');
+  // 8. Check for Mode Selection (First Visit) -> Splash Screen -> Dashboard
+  checkAndShowModePicker(() => {
+    showSplash(() => {
+      showTab('dashboard');
+    });
   });
 
   // 9. Render Creator Playbook tips
@@ -55,6 +56,153 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ============================================
+// Mode Management & Display
+// ============================================
+
+function getModeGreetingText(mode = (typeof getUserMode === 'function' ? getUserMode() : null) || 'creator') {
+  const appName = typeof getAppDisplayName === 'function' ? getAppDisplayName(mode) : (mode === 'brand' ? 'Creator Fit' : 'Brand Fit');
+  const timeGreeting = getTimeGreeting();
+  const userName = typeof getUserName === 'function' ? getUserName() : '';
+  if (userName && userName.trim()) {
+    return `${appName} — ${timeGreeting}, ${userName.trim()}`;
+  }
+  return `${appName} — ${timeGreeting}`;
+}
+
+function applyUserMode(mode, fromUserToggle = false) {
+  if (!mode || (mode !== 'creator' && mode !== 'brand')) {
+    mode = 'creator';
+  }
+
+  if (typeof setUserMode === 'function') {
+    setUserMode(mode);
+  }
+
+  const appDisplayName = typeof getAppDisplayName === 'function' ? getAppDisplayName(mode) : (mode === 'brand' ? 'Creator Fit' : 'Brand Fit');
+
+  // 1. Update document title
+  document.title = appDisplayName;
+
+  // 2. Update header title
+  const appTitleEl = document.getElementById('app-title');
+  if (appTitleEl) {
+    appTitleEl.textContent = appDisplayName;
+  }
+
+  // 3. Update splash logo
+  const splashLogoEl = document.getElementById('splash-logo');
+  if (splashLogoEl) {
+    splashLogoEl.textContent = mode === 'brand' ? 'CF' : 'BF';
+  }
+
+  // 4. Update Nav Toggle buttons active state
+  const creatorBtn = document.getElementById('nav-mode-creator');
+  const brandBtn = document.getElementById('nav-mode-brand');
+  if (creatorBtn) creatorBtn.classList.toggle('active', mode === 'creator');
+  if (brandBtn) brandBtn.classList.toggle('active', mode === 'brand');
+
+  // 5. Show/hide mode-specific nav items (data-mode-only="creator" or "brand")
+  document.querySelectorAll('.nav-item[data-mode-only]').forEach(item => {
+    const modeOnly = item.dataset.modeOnly;
+    if (modeOnly === mode) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+      // If user was on a tab that's now hidden, switch to Dashboard
+      if (item.classList.contains('active')) {
+        showTab('dashboard');
+      }
+    }
+  });
+
+  // 6. Refresh Dashboard if active or if mode just switched
+  const dashboardTab = document.getElementById('tab-dashboard');
+  if (dashboardTab && dashboardTab.classList.contains('active')) {
+    if (typeof renderDashboard === 'function') {
+      renderDashboard();
+    }
+  }
+
+  // 7. Update mascot messages & bubble if available
+  if (typeof updateMascotMode === 'function' && fromUserToggle) {
+    updateMascotMode(mode);
+  }
+
+  // 8. Update Checker tab labels, placeholders, dropzones & banner for active mode
+  if (typeof updateCheckerModeUI === 'function') {
+    updateCheckerModeUI(mode);
+  }
+}
+
+function initModeSwitcher() {
+  const creatorBtn = document.getElementById('nav-mode-creator');
+  const brandBtn = document.getElementById('nav-mode-brand');
+
+  if (creatorBtn) {
+    creatorBtn.addEventListener('click', () => {
+      if (typeof getUserMode === 'function' && getUserMode() === 'creator') return;
+      if (typeof setUserMode === 'function') setUserMode('creator');
+      applyUserMode('creator', true);
+      if (typeof playClickSound === 'function') playClickSound();
+    });
+  }
+
+  if (brandBtn) {
+    brandBtn.addEventListener('click', () => {
+      if (typeof getUserMode === 'function' && getUserMode() === 'brand') return;
+      if (typeof setUserMode === 'function') setUserMode('brand');
+      applyUserMode('brand', true);
+      if (typeof playClickSound === 'function') playClickSound();
+    });
+  }
+}
+
+function checkAndShowModePicker(onComplete) {
+  const savedMode = typeof getUserMode === 'function' ? getUserMode() : null;
+  const pickerEl = document.getElementById('mode-picker-screen');
+  const creatorCardBtn = document.getElementById('btn-mode-creator');
+  const brandCardBtn = document.getElementById('btn-mode-brand');
+
+  // If user already has a saved mode, apply it, skip picker, and continue directly
+  if (savedMode) {
+    applyUserMode(savedMode);
+    if (onComplete) onComplete();
+    return;
+  }
+
+  // First visit / no saved mode: show picker
+  if (!pickerEl) {
+    if (typeof setUserMode === 'function') setUserMode('creator');
+    applyUserMode('creator');
+    if (onComplete) onComplete();
+    return;
+  }
+
+  pickerEl.style.display = 'flex';
+
+  function handleSelect(mode) {
+    if (typeof setUserMode === 'function') setUserMode(mode);
+    applyUserMode(mode);
+
+    if (typeof playClickSound === 'function') playClickSound();
+
+    pickerEl.classList.add('picker-fade-out');
+    setTimeout(() => {
+      pickerEl.style.display = 'none';
+      pickerEl.classList.remove('picker-fade-out');
+      if (onComplete) onComplete();
+    }, 380);
+  }
+
+  if (creatorCardBtn) {
+    creatorCardBtn.onclick = () => handleSelect('creator');
+  }
+  if (brandCardBtn) {
+    brandCardBtn.onclick = () => handleSelect('brand');
+  }
+}
 
 // ============================================
 // Splash Screen
@@ -78,8 +226,8 @@ function showSplash(onComplete) {
     return;
   }
 
-  // Set greeting text
-  greetingEl.textContent = getTimeGreeting();
+  // Set mode-based time greeting text: e.g. "Brand Fit — Good morning" or "Creator Fit — Good evening"
+  greetingEl.textContent = getModeGreetingText();
 
   // Reset display state and activate splash
   splashEl.style.display = 'flex';
@@ -136,12 +284,20 @@ function showTab(tabName) {
   });
 
   // Trigger data loading for specific tabs
-  if (tabName === 'history') {
+  if (tabName === 'dashboard') {
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } else if (tabName === 'campaigns') {
+    if (typeof renderCampaignsTab === 'function') renderCampaignsTab();
+  } else if (tabName === 'creator-comparison') {
+    if (typeof renderCreatorComparisonTab === 'function') renderCreatorComparisonTab();
+  } else if (tabName === 'history') {
     loadHistory();
   } else if (tabName === 'rules') {
     loadRules();
   } else if (tabName === 'payments') {
     if (typeof loadPayments === 'function') loadPayments();
+  } else if (tabName === 'brand-profile') {
+    if (typeof loadBrandProfileIntoForm === 'function') loadBrandProfileIntoForm();
   }
 }
 

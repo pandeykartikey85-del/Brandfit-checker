@@ -218,11 +218,20 @@ function createHistoryCard(evaluation, index) {
 function updateCompareBarState() {
   const countEl = document.getElementById('compare-count');
   const compareBtn = document.getElementById('compare-selected-btn');
+  const isBrand = typeof getUserMode === 'function' && getUserMode() === 'brand';
   const count = selectedForCompare.size;
 
-  countEl.textContent = count === 0
-    ? 'Select 2–3 pitches to compare'
-    : `${count} pitch${count === 1 ? '' : 'es'} selected`;
+  if (isBrand) {
+    countEl.textContent = count === 0
+      ? 'Select 2–3 creators to compare'
+      : `${count} creator${count === 1 ? '' : 's'} selected`;
+    compareBtn.textContent = 'Compare Selected Creators';
+  } else {
+    countEl.textContent = count === 0
+      ? 'Select 2–3 pitches to compare'
+      : `${count} pitch${count === 1 ? '' : 'es'} selected`;
+    compareBtn.textContent = 'Compare Selected';
+  }
 
   compareBtn.disabled = count < 2;
 
@@ -254,6 +263,7 @@ async function handleCompare() {
 
   if (selectedForCompare.size < 2) return;
 
+  const isBrand = typeof getUserMode === 'function' && getUserMode() === 'brand';
   const selectedPitches = Array.from(selectedForCompare)
     .sort((a, b) => a - b)
     .map(idx => historyEvaluations[idx]);
@@ -262,7 +272,7 @@ async function handleCompare() {
 
   // Start loading
   compareBtn.disabled = true;
-  compareBtn.innerHTML = '<span class="spinner"></span> Comparing…';
+  compareBtn.innerHTML = `<span class="spinner"></span> Comparing ${isBrand ? 'Creators' : 'Pitches'}…`;
 
   let currentTipIdx = Math.floor(Math.random() * CREATOR_TIPS.length);
   resultEl.innerHTML = `
@@ -270,7 +280,7 @@ async function handleCompare() {
       <div class="loading-state-header">
         <div class="loading-indicator-badge">
           <span class="spinner"></span>
-          <span class="loading-label">Comparing ${selectedPitches.length} pitches with AI…</span>
+          <span class="loading-label">Comparing ${selectedPitches.length} ${isBrand ? 'creators' : 'pitches'} with AI…</span>
         </div>
       </div>
       <div class="loading-tip-wrapper">
@@ -293,15 +303,52 @@ async function handleCompare() {
   }, 2000);
 
   try {
-    const result = await comparePitches(selectedPitches);
+    if (isBrand) {
+      const creators = selectedPitches.map((ev, i) => {
+        const match = (ev.pitch_text || '').match(/@([a-zA-Z0-9._]+)/);
+        const name = match ? `@${match[1]}` : `Creator #${i + 1}`;
+        return {
+          name,
+          stated_price: '',
+          pitch_text: ev.pitch_text,
+          verdict: ev.verdict,
+          reasoning: ev.reasoning
+        };
+      });
+
+      let brandProfile = null;
+      if (typeof getBrandProfile === 'function') {
+        brandProfile = await getBrandProfile();
+      } else if (typeof getLocalBrandProfile === 'function') {
+        brandProfile = getLocalBrandProfile();
+      }
+
+      const result = await compareCreatorsForBrand(creators, brandProfile);
+      clearInterval(tipInterval);
+      compareBtn.disabled = false;
+      compareBtn.textContent = 'Compare Selected Creators';
+      if (typeof displayBrandCompareResult === 'function') {
+        displayBrandCompareResult(result, resultEl);
+      }
+      return;
+    }
+
+    let profile = null;
+    if (typeof getCreatorProfile === 'function') {
+      profile = await getCreatorProfile();
+    } else if (typeof getLocalCreatorProfile === 'function') {
+      profile = getLocalCreatorProfile();
+    }
+
+    const result = await comparePitches(selectedPitches, profile);
     clearInterval(tipInterval);
     compareBtn.disabled = false;
-    compareBtn.innerHTML = 'Compare Selected';
+    compareBtn.textContent = 'Compare Selected';
     displayCompareResult(result, resultEl);
   } catch (error) {
     clearInterval(tipInterval);
     compareBtn.disabled = false;
-    compareBtn.innerHTML = 'Compare Selected';
+    compareBtn.textContent = isBrand ? 'Compare Selected Creators' : 'Compare Selected';
     resultEl.innerHTML = `
       <div class="result-card compare-error-card">
         <p class="compare-error-msg">Comparison failed: ${escapeHtml(error.message)}</p>
@@ -326,28 +373,28 @@ function displayCompareResult(result, container) {
     }[t.verdict] || 'verdict-risky';
 
     return `
-      <div class="compare-tradeoff-card ${isTop ? 'compare-top-pick' : ''}">
-        <div class="compare-tradeoff-header">
-          <div class="compare-tradeoff-title-row">
-            <span class="compare-pitch-label">Pitch #${t.pitch_index}</span>
-            <span class="verdict-badge-sm ${verdictClass}">${escapeHtml(t.verdict || '')}</span>
-            ${isTop ? '<span class="compare-top-badge">★ Top Pick</span>' : ''}
-            <span class="compare-rank-badge">#${t.priority_rank || t.pitch_index} Priority</span>
+      <div class="compare-tradeoff-card ${isTop ? 'top-choice-card' : ''}">
+        <div class="compare-card-top">
+          <div class="compare-card-title-group">
+            <span class="compare-card-rank">#${t.priority_rank || t.pitch_index}</span>
+            <span class="compare-card-pitch-num">Pitch #${t.pitch_index}</span>
+            ${isTop ? '<span class="top-choice-badge">★ Top Pick</span>' : ''}
           </div>
-          <p class="compare-pitch-preview">${escapeHtml(t.preview || '')}</p>
+          <span class="verdict-badge-sm ${verdictClass}">${escapeHtml(t.verdict || 'Risky')}</span>
         </div>
-        <div class="compare-tradeoff-grid">
-          <div class="compare-cell">
-            <span class="compare-cell-label">💰 Compensation</span>
-            <p class="compare-cell-text">${escapeHtml(t.compensation || 'N/A')}</p>
+        <p class="compare-card-preview">“${escapeHtml(t.preview || '')}”</p>
+        <div class="compare-factors-grid">
+          <div class="compare-factor-item">
+            <span class="compare-factor-label">💰 Compensation:</span>
+            <span class="compare-factor-val">${escapeHtml(t.compensation || '')}</span>
           </div>
-          <div class="compare-cell">
-            <span class="compare-cell-label">🎯 Niche Fit</span>
-            <p class="compare-cell-text">${escapeHtml(t.niche_fit || t.nicheFit || 'N/A')}</p>
+          <div class="compare-factor-item">
+            <span class="compare-factor-label">🎯 Niche Fit:</span>
+            <span class="compare-factor-val">${escapeHtml(t.niche_fit || '')}</span>
           </div>
-          <div class="compare-cell">
-            <span class="compare-cell-label">⚠ Risk Level</span>
-            <p class="compare-cell-text">${escapeHtml(t.risk_level || t.riskLevel || 'N/A')}</p>
+          <div class="compare-factor-item">
+            <span class="compare-factor-label">⚠️ Risk & Terms:</span>
+            <span class="compare-factor-val">${escapeHtml(t.risk_level || '')}</span>
           </div>
         </div>
       </div>
@@ -355,7 +402,7 @@ function displayCompareResult(result, container) {
   }).join('');
 
   const actionPlanHtml = result.actionPlan ? `
-    <div class="compare-action-plan">
+    <div class="compare-action-plan-box">
       <div class="compare-action-plan-header">
         <span class="compare-action-plan-label">📋 Recommended Next Steps</span>
       </div>
@@ -404,8 +451,8 @@ async function loadPatternSummary(evaluations, container) {
   container.innerHTML = `
     <div class="patterns-card patterns-loading">
       <div class="patterns-card-header">
-        <h3 class="patterns-title">Your Patterns</h3>
-        <span class="patterns-subtitle">Analyzing your evaluation history…</span>
+        <h3 class="patterns-title">Your Patterns & Profile Insights</h3>
+        <span class="patterns-subtitle">Analyzing evaluation history against your profile benchmarks…</span>
       </div>
       <div class="patterns-loading-spinner">
         <span class="spinner"></span>
@@ -415,8 +462,15 @@ async function loadPatternSummary(evaluations, container) {
   container.classList.add('visible');
 
   try {
-    const patterns = await generatePatternSummary(evaluations);
-    displayPatternSummary(patterns, evaluations, container);
+    let profile = null;
+    if (typeof getCreatorProfile === 'function') {
+      profile = await getCreatorProfile();
+    } else if (typeof getLocalCreatorProfile === 'function') {
+      profile = getLocalCreatorProfile();
+    }
+
+    const patterns = await generatePatternSummary(evaluations, profile);
+    displayPatternSummary(patterns, evaluations, profile, container);
   } catch (error) {
     console.warn('Pattern summary failed:', error);
     container.innerHTML = '';
@@ -424,10 +478,25 @@ async function loadPatternSummary(evaluations, container) {
   }
 }
 
-function displayPatternSummary(patterns, evaluations, container) {
+function displayPatternSummary(patterns, evaluations, profile, container) {
   const goodCount = evaluations.filter(e => e.verdict === 'Good Fit').length;
   const riskyCount = evaluations.filter(e => e.verdict === 'Risky').length;
   const badCount = evaluations.filter(e => e.verdict === 'Bad Fit').length;
+
+  let profileBenchmarkHtml = '';
+  if (profile && (profile.main_niche || profile.min_acceptable_payment || profile.typical_rates)) {
+    const benchmarks = [];
+    if (profile.main_niche) benchmarks.push(`Niche: <strong>${escapeHtml(profile.main_niche)}</strong>`);
+    if (profile.min_acceptable_payment) benchmarks.push(`Min Payment Floor: <strong>${escapeHtml(profile.min_acceptable_payment)}</strong>`);
+    if (profile.typical_rates) benchmarks.push(`Standard Rates: <strong>${escapeHtml(profile.typical_rates)}</strong>`);
+
+    profileBenchmarkHtml = `
+      <div class="patterns-profile-benchmarks">
+        <span class="benchmark-pill-label">🎯 Active Profile Benchmarks:</span>
+        <span class="benchmark-pills">${benchmarks.join(' · ')}</span>
+      </div>
+    `;
+  }
 
   const patternsListHtml = patterns.map(p =>
     `<li class="pattern-item">${escapeHtml(p)}</li>`
@@ -437,10 +506,12 @@ function displayPatternSummary(patterns, evaluations, container) {
     <div class="patterns-card">
       <div class="patterns-card-header">
         <div class="patterns-header-left">
-          <h3 class="patterns-title">Your Patterns</h3>
-          <span class="patterns-subtitle">Based on ${evaluations.length} saved evaluations</span>
+          <h3 class="patterns-title">Your Patterns & Profile Insights</h3>
+          <span class="patterns-subtitle">Based on ${evaluations.length} saved evaluations and your saved Creator Profile</span>
         </div>
       </div>
+
+      ${profileBenchmarkHtml}
 
       <div class="patterns-stats-row">
         <div class="patterns-stat">
