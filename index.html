@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brand Fit Checker</title>
+  <title>Brand Fit</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,11 +25,48 @@
 <body>
 
   <!-- ========================================
+       MODE SELECTION SCREEN (First Visit)
+       ======================================== -->
+  <div id="mode-picker-screen" class="mode-picker-screen" style="display: none;">
+    <div class="mode-picker-card">
+      <div class="mode-picker-badge">Welcome to the Fit Evaluator</div>
+      <h2 class="mode-picker-title">What are you here to evaluate?</h2>
+      <p class="mode-picker-subtitle">Select your perspective to personalize your evaluation workspace.</p>
+      
+      <div class="mode-picker-options">
+        <button type="button" class="mode-card-btn" data-mode="creator" id="btn-mode-creator">
+          <div class="mode-card-header">
+            <span class="mode-card-tag tag-creator">Creator</span>
+            <span class="mode-card-icon">🎨</span>
+          </div>
+          <div class="mode-card-body">
+            <h3 class="mode-card-name">Brand Fit</h3>
+            <p class="mode-card-desc">“I want to evaluate a brand deal”</p>
+          </div>
+          <div class="mode-card-action">Select Creator Mode &rarr;</div>
+        </button>
+
+        <button type="button" class="mode-card-btn" data-mode="brand" id="btn-mode-brand">
+          <div class="mode-card-header">
+            <span class="mode-card-tag tag-brand">Brand / Agency</span>
+            <span class="mode-card-icon">🏢</span>
+          </div>
+          <div class="mode-card-body">
+            <h3 class="mode-card-name">Creator Fit</h3>
+            <p class="mode-card-desc">“I want to evaluate a creator”</p>
+          </div>
+          <div class="mode-card-action">Select Brand Mode &rarr;</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
        WELCOME SPLASH SCREEN
        ======================================== -->
   <div id="splash-screen" class="splash-screen">
     <div class="splash-content">
-      <div class="splash-logo">BF</div>
+      <div class="splash-logo" id="splash-logo">BF</div>
       <p id="splash-greeting" class="splash-greeting"></p>
     </div>
   </div>
@@ -50,12 +87,20 @@
     </p>
     <form id="settings-form">
       <div class="form-group">
+        <label for="input-user-gemini-key">Your Gemini API Key (Optional — Unlimited Daily Checks)</label>
+        <input type="password" id="input-user-gemini-key" placeholder="AIzaSy…" autocomplete="off">
+        <p class="form-help-text">
+          Free daily limit is 5 checks. For unlimited use, <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">get a free key at aistudio.google.com/app/apikey</a>. Stored strictly in your browser and never shared.
+        </p>
+      </div>
+      <div class="form-group">
         <label for="input-supabase-url">Supabase Project URL (Optional)</label>
         <input type="url" id="input-supabase-url" placeholder="https://xxxxx.supabase.co" autocomplete="off">
       </div>
       <div class="form-group">
         <label for="input-supabase-key">Supabase Anon Key (Optional)</label>
         <input type="password" id="input-supabase-key" placeholder="eyJhbG…" autocomplete="off">
+        <p class="form-help-text">Use the <strong>anon / public</strong> key (JWT starting with <code>eyJ...</code>) from Project Settings &rarr; API.</p>
       </div>
       <div id="settings-error" class="settings-error"></div>
       <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -166,7 +211,7 @@
     <header class="app-header">
       <div class="header-content">
         <div class="header-left">
-          <h1 class="app-title">Brand Fit Checker</h1>
+          <h1 class="app-title" id="app-title">Brand Fit</h1>
           <p id="daily-quote" class="daily-quote"></p>
         </div>
         <div class="header-actions">
@@ -201,42 +246,305 @@
       </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="app-nav">
-      <a href="#" class="nav-item active" data-tab="checker">Checker</a>
-      <a href="#" class="nav-item" data-tab="contracts">Contracts</a>
-      <a href="#" class="nav-item" data-tab="payments">Payments <span id="payments-badge" class="nav-badge" style="display:none">0</span></a>
-      <a href="#" class="nav-item" data-tab="history">History</a>
-      <a href="#" class="nav-item" data-tab="rules">My Rules</a>
-    </nav>
+    <!-- Navigation & Mode Switcher Bar -->
+    <div class="nav-bar-wrapper">
+      <nav class="app-nav">
+        <!-- Universal / Mode-adaptive: Dashboard -->
+        <a href="#" class="nav-item active" data-tab="dashboard">Dashboard</a>
+
+        <!-- Checker: Creator Mode says 'Checker', Brand Mode says 'Creator Checker' -->
+        <a href="#" class="nav-item" data-tab="checker" data-mode-only="creator">Checker</a>
+        <a href="#" class="nav-item" data-tab="checker" data-mode-only="brand">Creator Checker</a>
+
+        <!-- Creator Mode Only Items -->
+        <a href="#" class="nav-item" data-tab="contracts" data-mode-only="creator">Contracts</a>
+        <a href="#" class="nav-item" data-tab="payments" data-mode-only="creator">Payments <span id="payments-badge" class="nav-badge" style="display:none">0</span></a>
+        <a href="#" class="nav-item" data-tab="profile" data-mode-only="creator">My Profile</a>
+        <a href="#" class="nav-item" data-tab="rules" data-mode-only="creator">My Rules</a>
+
+        <!-- Brand Mode Only Items -->
+        <a href="#" class="nav-item" data-tab="campaigns" data-mode-only="brand">Campaigns</a>
+        <a href="#" class="nav-item" data-tab="creator-comparison" data-mode-only="brand">Creator Comparison</a>
+        <a href="#" class="nav-item" data-tab="brand-profile" data-mode-only="brand">Brand Profile</a>
+
+        <!-- Universal: History -->
+        <a href="#" class="nav-item" data-tab="history">History</a>
+      </nav>
+
+      <!-- Perspective Mode Switcher Toggle (Creator | Brand) -->
+      <div class="mode-toggle-pill" id="mode-toggle-nav" role="group" aria-label="Perspective Mode Switcher">
+        <button type="button" class="mode-toggle-btn active" data-mode="creator" id="nav-mode-creator">Creator</button>
+        <button type="button" class="mode-toggle-btn" data-mode="brand" id="nav-mode-brand">Brand</button>
+      </div>
+    </div>
 
     <!-- Main Content (tab panels) -->
     <main class="app-main">
 
-      <!-- ====== CHECKER TAB ====== -->
-      <div id="tab-checker" class="tab-content active">
-        <div class="checker-form">
-          <div class="form-group">
-            <label for="pitch-input">
-              <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-              </svg>
-              <span>Paste the brand's pitch / message</span>
-            </label>
-            <textarea id="pitch-input" rows="8"
-                      placeholder="Paste the full email, DM, or message from the brand here…"></textarea>
+      <!-- ====== DASHBOARD TAB (Universal Container) ====== -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div id="dashboard-content-container" class="dashboard-content-container">
+          <div class="dashboard-loading">
+            <span class="spinner"></span> Loading real-time dashboard summaries…
           </div>
-          <div class="form-group">
-            <label for="profile-input">
-              <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span>Describe your profile</span>
-            </label>
-            <textarea id="profile-input" rows="4"
-                      placeholder="E.g., Tech reviewer on YouTube, 45K subscribers, audience is 18–34 male, primarily interested in budget smartphones and gadgets…"></textarea>
+        </div>
+      </div>
+
+      <!-- ====== CAMPAIGNS TAB (Brand Mode Only) ====== -->
+      <div id="tab-campaigns" class="tab-content">
+        <div class="campaigns-container">
+          <div class="campaigns-header">
+            <div>
+              <h2>Campaign Overview & Creator Pipeline</h2>
+              <p class="text-muted">Manage campaign deliverables, budget allocation, and candidate alignment</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="showTab('brand-profile')">
+              Edit Campaign Criteria ⚙️
+            </button>
+          </div>
+          <div id="campaigns-content-container" class="campaigns-content-container"></div>
+        </div>
+      </div>
+
+      <!-- ====== CREATOR COMPARISON TAB (Brand Mode Only) ====== -->
+      <div id="tab-creator-comparison" class="tab-content">
+        <div class="creator-comparison-tab-container">
+          <div class="comparison-tab-header">
+            <div>
+              <h2>Compare Creators Side-by-Side</h2>
+              <p class="text-muted">Evaluate multiple creators on Audience Fit, Engagement, Cost, and Campaign Fit with plain-English trade-offs</p>
+            </div>
+          </div>
+          <div id="comparison-tab-content-container" class="comparison-tab-content-container"></div>
+        </div>
+      </div>
+
+      <!-- ====== CHECKER TAB ====== -->
+      <div id="tab-checker" class="tab-content">
+        <div class="checker-form">
+
+          <!-- Active Profile Indicator Banner -->
+          <div id="active-profile-banner" class="active-profile-banner" style="display: none;">
+            <div class="active-profile-left">
+              <span class="active-profile-check-icon">✓</span>
+              <div class="active-profile-text">
+                <span class="active-profile-label">Auto-evaluating against your saved profile:</span>
+                <strong id="active-profile-summary" class="active-profile-summary"></strong>
+              </div>
+            </div>
+            <a href="#" class="active-profile-edit-btn" id="btn-edit-profile-link">Edit Profile</a>
+          </div>
+
+          <!-- Input Mode Tabs: Paste Text | Upload Screenshot | Paste URL -->
+          <div class="pitch-input-mode-tabs" role="tablist" aria-label="Pitch Input Type">
+            <button type="button" class="input-mode-btn active" data-input-mode="text" id="btn-mode-text">
+              <span class="mode-icon">📝</span>
+              <span>Paste Text</span>
+            </button>
+            <button type="button" class="input-mode-btn" data-input-mode="image" id="btn-mode-image">
+              <span class="mode-icon">📷</span>
+              <span>Upload Screenshot</span>
+            </button>
+            <button type="button" class="input-mode-btn" data-input-mode="url" id="btn-mode-url">
+              <span class="mode-icon">🔗</span>
+              <span>Paste URL</span>
+            </button>
+            <button type="button" class="input-mode-btn" data-input-mode="compare" id="btn-mode-compare" data-mode-only="brand">
+              <span class="mode-icon">👥</span>
+              <span>Compare Creators</span>
+            </button>
+          </div>
+
+          <!-- Panel 1: Paste Text (Default) -->
+          <div id="panel-input-text" class="pitch-input-panel active">
+            <div class="form-group">
+              <label for="pitch-input">
+                <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+                <span id="label-text-input">Paste the brand's pitch / message</span>
+              </label>
+              <textarea id="pitch-input" rows="8"
+                        placeholder="Paste the full email, DM, or message from the brand here…"></textarea>
+            </div>
+
+            <!-- Brand Mode: Extract Creator Claims Bar & Card -->
+            <div id="brand-extract-actions" class="pitch-extract-actions-row" style="display:none;">
+              <button type="button" id="btn-extract-creator-pitch" class="btn btn-secondary btn-extract-claims">
+                <span>✨ Extract Creator Claims</span>
+              </button>
+              <span class="extract-hint-text">Auto-extract name, followers, engagement, reach, niche, deliverables, and rate</span>
+            </div>
+            <div id="creator-extracted-details-card" class="creator-extracted-details-card" style="display:none;"></div>
+          </div>
+
+          <!-- Panel 2: Upload Screenshot / Image -->
+          <div id="panel-input-image" class="pitch-input-panel">
+            <div class="form-group">
+              <label>
+                <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                  <circle cx="9" cy="9" r="2"/>
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                </svg>
+                <span id="label-image-input">Upload Screenshot or Image</span>
+              </label>
+
+              <div id="screenshot-dropzone" class="screenshot-dropzone">
+                <input type="file" id="screenshot-file-input" accept="image/png, image/jpeg, image/webp, image/heic, image/gif" style="display:none;">
+                <div class="dropzone-inner">
+                  <div class="dropzone-icon">📥</div>
+                  <p id="dropzone-title" class="dropzone-title">Drag & drop your screenshot here, or <span class="dropzone-link">browse</span></p>
+                  <p id="dropzone-hint" class="dropzone-hint">Supports Instagram DMs, WhatsApp, Emails, Briefs, Proposals & Contracts (PNG, JPG, WEBP)</p>
+                </div>
+              </div>
+
+              <!-- Preview & OCR extraction state -->
+              <div id="screenshot-preview-container" class="screenshot-preview-container" style="display:none;">
+                <div class="screenshot-preview-card">
+                  <img id="screenshot-preview-img" class="screenshot-preview-img" alt="Uploaded pitch screenshot">
+                  <div class="screenshot-preview-meta">
+                    <div class="meta-row">
+                      <span id="screenshot-filename" class="meta-filename">screenshot.png</span>
+                      <button type="button" id="btn-remove-screenshot" class="btn-remove-screenshot" title="Remove image">&times;</button>
+                    </div>
+                    <div id="ocr-status-indicator" class="ocr-status-indicator">
+                      <span class="ocr-spinner"></span> Extracting pitch text…
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group extracted-text-group">
+                  <label for="extracted-image-text">
+                    <span id="label-image-extracted-text">Extracted Pitch Text (Editable)</span>
+                  </label>
+                  <textarea id="extracted-image-text" rows="6" placeholder="Extracted pitch text will appear here…"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Paste Brand / Campaign URL -->
+          <div id="panel-input-url" class="pitch-input-panel">
+            <div class="form-group">
+              <label for="pitch-url-input">
+                <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                <span id="label-url-input">Paste Brand or Campaign URL</span>
+              </label>
+              <div class="url-input-action-row">
+                <input type="url" id="pitch-url-input" placeholder="https://brand-website.com/campaign or product page" autocomplete="url">
+                <button type="button" id="btn-fetch-url-content" class="btn btn-secondary btn-fetch-url">Fetch Page</button>
+              </div>
+              <p id="pitch-url-hint" class="field-hint">We'll fetch publicly accessible text from the page without inventing unverified claims.</p>
+
+              <div id="url-status-message" class="url-status-message" style="display:none;"></div>
+
+              <div id="url-extracted-container" class="url-extracted-container" style="display:none;">
+                <div class="form-group extracted-text-group">
+                  <label for="extracted-url-text">
+                    <span id="label-url-extracted-text">Retrieved Page Content (Editable)</span>
+                  </label>
+                  <textarea id="extracted-url-text" rows="6" placeholder="Retrieved page content…"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 4: Compare Multiple Creators (Brand Mode Only) -->
+          <div id="panel-input-compare" class="pitch-input-panel">
+            <div class="compare-inputs-intro">
+              <span class="compare-inputs-title">👥 Evaluate Multiple Creators Side-by-Side</span>
+              <p class="compare-inputs-subtitle text-muted">Compare audience fit, engagement, rate-to-value, and campaign alignment with plain-English trade-offs</p>
+            </div>
+
+            <div class="compare-creators-grid" id="compare-creators-grid">
+              <!-- Creator 1 -->
+              <div class="compare-creator-col" id="compare-col-1">
+                <div class="compare-col-header">
+                  <span class="compare-col-badge">Creator 1</span>
+                  <span class="compare-col-label">Required</span>
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-name-1">Creator Name / Handle</label>
+                  <input type="text" id="cmp-name-1" placeholder="E.g., @techreviewer, Sarah Jenkins" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-price-1">Stated / Quoted Rate</label>
+                  <input type="text" id="cmp-price-1" placeholder="E.g., ₹45,000, $1,200, or TBD" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-pitch-1">Pitch / Deliverables / Stats</label>
+                  <textarea id="cmp-pitch-1" rows="5" placeholder="Paste Creator 1's email, DM, deliverables, claimed followers & engagement…" class="cmp-textarea"></textarea>
+                </div>
+              </div>
+
+              <!-- Creator 2 -->
+              <div class="compare-creator-col" id="compare-col-2">
+                <div class="compare-col-header">
+                  <span class="compare-col-badge">Creator 2</span>
+                  <span class="compare-col-label">Required</span>
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-name-2">Creator Name / Handle</label>
+                  <input type="text" id="cmp-name-2" placeholder="E.g., @lifestylecreator, Alex Chen" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-price-2">Stated / Quoted Rate</label>
+                  <input type="text" id="cmp-price-2" placeholder="E.g., ₹25,000, $800, or TBD" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-pitch-2">Pitch / Deliverables / Stats</label>
+                  <textarea id="cmp-pitch-2" rows="5" placeholder="Paste Creator 2's email, DM, deliverables, claimed followers & engagement…" class="cmp-textarea"></textarea>
+                </div>
+              </div>
+
+              <!-- Creator 3 (Optional) -->
+              <div class="compare-creator-col compare-col-optional" id="compare-col-3" style="display:none;">
+                <div class="compare-col-header">
+                  <span class="compare-col-badge">Creator 3</span>
+                  <button type="button" class="btn-remove-cmp-col" id="btn-remove-creator-3" title="Remove Creator 3">&times;</button>
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-name-3">Creator Name / Handle</label>
+                  <input type="text" id="cmp-name-3" placeholder="E.g., @foodieguide, Priya Sharma" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-price-3">Stated / Quoted Rate</label>
+                  <input type="text" id="cmp-price-3" placeholder="E.g., ₹60,000, $1,500, or TBD" class="cmp-input">
+                </div>
+                <div class="form-group compare-field-group">
+                  <label for="cmp-pitch-3">Pitch / Deliverables / Stats</label>
+                  <textarea id="cmp-pitch-3" rows="5" placeholder="Paste Creator 3's email, DM, deliverables, claimed followers & engagement…" class="cmp-textarea"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="compare-grid-actions">
+              <button type="button" id="btn-add-creator-3" class="btn btn-secondary btn-sm">
+                <span>+ Add 3rd Creator</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" id="profile-input-group">
+            <div class="profile-label-row">
+              <label for="profile-input">
+                <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span id="label-profile-input">Describe your profile (Optional if My Profile is saved)</span>
+              </label>
+              <button type="button" class="btn-toggle-manual" id="btn-toggle-manual-profile" style="display:none;">Override profile for this check ▼</button>
+            </div>
+            <div class="profile-manual-drawer">
+              <textarea id="profile-input" rows="4"
+                        placeholder="E.g., Tech reviewer on YouTube, 45K subscribers, audience is 18–34 male, primarily interested in budget smartphones and gadgets…"></textarea>
+            </div>
           </div>
           <div id="checker-error" class="checker-error"></div>
           <button id="check-btn" class="btn btn-primary btn-check">Check Fit</button>
@@ -283,14 +591,82 @@
             </p>
           </div>
 
+          <div class="pitch-input-mode-tabs contract-input-mode-tabs" role="tablist">
+            <button type="button" class="input-mode-btn active" data-contract-input-mode="text" role="tab" aria-selected="true">
+              📝 Paste Contract Text
+            </button>
+            <button type="button" class="input-mode-btn" data-contract-input-mode="image" role="tab" aria-selected="false">
+              📷 Upload Contract Screenshot / Image
+            </button>
+          </div>
+
           <div class="contracts-form">
-            <div class="form-group">
-              <label for="contract-input">Paste contract text (optional)</label>
-              <textarea id="contract-input" rows="8"
-                        placeholder="Paste contract clauses or agreement text here (e.g. usage rights, exclusivity, whitelisting, indemnification, payment terms)…"></textarea>
+            <!-- Panel 1: Paste Text -->
+            <div id="panel-contract-text" class="pitch-input-panel active">
+              <div class="form-group">
+                <label for="contract-input">
+                  <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>Paste Contract Clauses / Agreement Text</span>
+                </label>
+                <textarea id="contract-input" rows="8"
+                          placeholder="Paste contract clauses or agreement text here (e.g. usage rights, exclusivity, whitelisting, indemnification, payment terms, non-compete, revision limits)…"></textarea>
+              </div>
             </div>
+
+            <!-- Panel 2: Upload Contract Screenshot or Image -->
+            <div id="panel-contract-image" class="pitch-input-panel">
+              <div class="form-group">
+                <label>
+                  <svg class="label-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                    <circle cx="9" cy="9" r="2"/>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                  <span>Upload Contract Screenshot or Document Image</span>
+                </label>
+
+                <div id="contract-dropzone" class="screenshot-dropzone">
+                  <input type="file" id="contract-file-input" accept="image/png, image/jpeg, image/webp, image/heic, image/gif" style="display:none;">
+                  <div class="dropzone-inner">
+                    <div class="dropzone-icon">📄</div>
+                    <p class="dropzone-title">Drag & drop contract screenshot or image here, or <span class="dropzone-link">browse</span></p>
+                    <p class="dropzone-hint">Supports contract screenshots, agreement photos, PDF/DM crops (PNG, JPG, WEBP)</p>
+                  </div>
+                </div>
+
+                <!-- Preview & OCR extraction state -->
+                <div id="contract-preview-container" class="screenshot-preview-container" style="display:none;">
+                  <div class="screenshot-preview-card">
+                    <img id="contract-preview-img" class="screenshot-preview-img" alt="Uploaded contract image">
+                    <div class="screenshot-preview-meta">
+                      <div class="meta-row">
+                        <span id="contract-filename" class="meta-filename">contract-page.png</span>
+                        <button type="button" id="btn-remove-contract-img" class="btn-remove-screenshot" title="Remove image">&times;</button>
+                      </div>
+                      <div id="contract-ocr-status" class="ocr-status-indicator">
+                        <span class="ocr-spinner"></span> Extracting contract text with AI…
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-group extracted-text-group">
+                    <label for="extracted-contract-text">
+                      <span>Extracted Contract Text (Editable)</span>
+                    </label>
+                    <textarea id="extracted-contract-text" rows="6" placeholder="Extracted contract clauses will appear here…"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div id="contract-error" class="checker-error"></div>
             <button id="explain-contract-btn" class="btn btn-primary btn-check">Explain Clauses</button>
+            <p class="checker-supporting-text">Analyzes perpetual usage, exclusivity, whitelisting, non-compete, revisions & hidden liabilities</p>
           </div>
 
           <div id="contract-result" class="checker-result"></div>
@@ -387,6 +763,407 @@
         </div>
       </div>
 
+      <!-- ====== MY PROFILE TAB ====== -->
+      <div id="tab-profile" class="tab-content">
+        <div class="profile-container">
+          <div class="profile-header">
+            <div class="profile-header-title">
+              <h2>My Creator Profile</h2>
+              <span class="profile-sync-badge">Auto-synced to evaluations</span>
+            </div>
+            <p class="text-muted">
+              Enter your creator details once. The AI evaluator will automatically test every incoming brand pitch against your real audience, rate card, niche, and deal preferences without retyping!
+            </p>
+          </div>
+
+          <form id="creator-profile-form" class="creator-profile-form">
+
+            <!-- Section 1: Basic Information -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">👤</span>
+                <h3>1. Basic Information</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="profile-name">Creator / Channel Name</label>
+                  <input type="text" id="profile-name" placeholder="E.g., Alex Rivers / TechLens" autocomplete="name">
+                </div>
+                <div class="form-group">
+                  <label for="profile-instagram">Instagram URL or Handle</label>
+                  <input type="text" id="profile-instagram" placeholder="https://instagram.com/yourhandle">
+                </div>
+                <div class="form-group">
+                  <label for="profile-youtube">YouTube Channel URL</label>
+                  <input type="text" id="profile-youtube" placeholder="https://youtube.com/@yourchannel">
+                </div>
+                <div class="form-group">
+                  <label for="profile-other-socials">Other Social / Portfolio Links</label>
+                  <input type="text" id="profile-other-socials" placeholder="TikTok, Substack, LinkedIn, Website…">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Audience & Demographics -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">📊</span>
+                <h3>2. Audience Demographics & Reach</h3>
+              </div>
+              <div class="form-grid form-grid-3">
+                <div class="form-group">
+                  <label for="profile-followers">Followers / Subscribers</label>
+                  <input type="text" id="profile-followers" placeholder="E.g., 65K YouTube, 30K IG">
+                </div>
+                <div class="form-group">
+                  <label for="profile-avg-views">Average Views / Impressions</label>
+                  <input type="text" id="profile-avg-views" placeholder="E.g., 18K - 35K views">
+                </div>
+                <div class="form-group">
+                  <label for="profile-avg-reach">Monthly Reach</label>
+                  <input type="text" id="profile-avg-reach" placeholder="E.g., 250K impressions">
+                </div>
+                <div class="form-group">
+                  <label for="profile-engagement-rate">Engagement Rate</label>
+                  <input type="text" id="profile-engagement-rate" placeholder="E.g., 5.4%">
+                </div>
+                <div class="form-group">
+                  <label for="profile-audience-location">Audience Top Locations</label>
+                  <input type="text" id="profile-audience-location" placeholder="E.g., 55% US, 20% UK, 15% India">
+                </div>
+                <div class="form-group">
+                  <label for="profile-audience-age">Audience Age Bracket</label>
+                  <input type="text" id="profile-audience-age" placeholder="E.g., 18–34 (70%)">
+                </div>
+              </div>
+              <div class="form-grid form-grid-2" style="margin-top: var(--spacing-sm);">
+                <div class="form-group">
+                  <label for="profile-audience-demographics">Gender & Demographics</label>
+                  <input type="text" id="profile-audience-demographics" placeholder="E.g., 60% Male, 40% Female">
+                </div>
+                <div class="form-group">
+                  <label for="profile-audience-interests">Audience Core Interests</label>
+                  <input type="text" id="profile-audience-interests" placeholder="E.g., Tech gadgets, productivity, remote work">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Content & Niche -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">🎬</span>
+                <h3>3. Content & Niche</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="profile-main-niche">Main Niche</label>
+                  <input type="text" id="profile-main-niche" placeholder="E.g., Consumer Tech & Smart Home Reviews">
+                </div>
+                <div class="form-group">
+                  <label for="profile-secondary-niches">Secondary Niches</label>
+                  <input type="text" id="profile-secondary-niches" placeholder="E.g., Desk setups, software productivity tools">
+                </div>
+                <div class="form-group">
+                  <label for="profile-content-formats">Content Formats Produced</label>
+                  <input type="text" id="profile-content-formats" placeholder="E.g., 60s Reels, dedicated videos, 90s integrations">
+                </div>
+                <div class="form-group">
+                  <label for="profile-platforms">Primary Platforms</label>
+                  <input type="text" id="profile-platforms" placeholder="E.g., YouTube, Instagram, TikTok">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label for="profile-content-style">Content Style & Tone</label>
+                <input type="text" id="profile-content-style" placeholder="E.g., Educational, cinematic, honest & candid reviews">
+              </div>
+            </div>
+
+            <!-- Section 4: Commercial Terms & Rates -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">💰</span>
+                <h3>4. Commercial Terms & Rates</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="profile-typical-rates">Typical Rates / Rate Card Summary</label>
+                  <input type="text" id="profile-typical-rates" placeholder="E.g., $800 IG Reel, $1,500 dedicated YouTube video">
+                </div>
+                <div class="form-group">
+                  <label for="profile-min-payment">MINIMUM Acceptable Payment (Hard Floor)</label>
+                  <input type="text" id="profile-min-payment" placeholder="E.g., $500 (reject deals below this)">
+                </div>
+                <div class="form-group">
+                  <label for="profile-preferred-collabs">Preferred Collaboration Types</label>
+                  <input type="text" id="profile-preferred-collabs" placeholder="E.g., Flat-fee sponsorships, long-term brand ambassador">
+                </div>
+                <div class="form-group">
+                  <label for="profile-preferred-industries">Preferred Brand Industries</label>
+                  <input type="text" id="profile-preferred-industries" placeholder="E.g., Tech hardware, SaaS, ergonomics, audio gear">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label for="profile-unwanted-industries">EXCLUDED / Unwanted Industries & Categories</label>
+                <input type="text" id="profile-unwanted-industries" placeholder="E.g., Gambling, crypto, dropshipping, MLM, fast fashion, weight-loss">
+              </div>
+            </div>
+
+            <!-- Section 5: Deal Preferences & Limits -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">⚖️</span>
+                <h3>5. Deal Preferences & Rights</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="profile-dealbreakers">Personal Dealbreakers</label>
+                  <input type="text" id="profile-dealbreakers" placeholder="E.g., No full copyright buyout, no whitelisting without fee">
+                </div>
+                <div class="form-group">
+                  <label for="profile-exclusivity">Exclusivity Preferences</label>
+                  <input type="text" id="profile-exclusivity" placeholder="E.g., Max 30 days category exclusivity; extra fee for longer">
+                </div>
+                <div class="form-group">
+                  <label for="profile-usage-rights">Usage Rights Policy</label>
+                  <input type="text" id="profile-usage-rights" placeholder="E.g., Organic social only; paid ads requires separate license">
+                </div>
+                <div class="form-group">
+                  <label for="profile-max-revisions">Maximum Revisions Allowed</label>
+                  <input type="text" id="profile-max-revisions" placeholder="E.g., 1 round of minor edits; reshoots require 50% fee">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label for="profile-unpaid-rules">Unpaid / Gifted Collaboration Rules</label>
+                <input type="text" id="profile-unpaid-rules" placeholder="E.g., Never accept product-only compensation for deliverables">
+              </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="profile-actions-bar">
+              <button type="submit" id="profile-save-btn" class="btn btn-primary btn-save-profile">Save Profile</button>
+              <button type="button" id="profile-reset-btn" class="btn btn-secondary">Clear Fields</button>
+              <div id="profile-save-status" class="profile-status-message"></div>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- ====== BRAND PROFILE TAB ====== -->
+      <div id="tab-brand-profile" class="tab-content">
+        <div class="profile-container">
+          <div class="profile-header">
+            <div class="profile-header-title">
+              <h2>Brand Profile</h2>
+              <span class="profile-sync-badge">Auto-synced to evaluations</span>
+            </div>
+            <p class="text-muted">
+              Enter your brand and campaign details once. The AI evaluator will automatically match creators against your requirements, audience, budget, and campaign goals — no retyping needed.
+            </p>
+          </div>
+
+          <form id="brand-profile-form" class="creator-profile-form">
+
+            <!-- Section 1: Brand Identity -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">🏢</span>
+                <h3>1. Brand Identity</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="bp-brand-name">Brand / Company Name</label>
+                  <input type="text" id="bp-brand-name" placeholder="E.g., Acme Health, FreshBite Foods" autocomplete="organization">
+                </div>
+                <div class="form-group">
+                  <label for="bp-industry">Industry</label>
+                  <input type="text" id="bp-industry" placeholder="E.g., Health & Wellness, FinTech, F&B, Fashion, SaaS">
+                </div>
+                <div class="form-group">
+                  <label for="bp-product-service">Product / Service</label>
+                  <input type="text" id="bp-product-service" placeholder="E.g., Protein supplements, mobile app, subscription box">
+                </div>
+                <div class="form-group">
+                  <label for="bp-positioning">Brand Positioning / Mission</label>
+                  <input type="text" id="bp-positioning" placeholder="E.g., Premium eco-friendly wellness for millennials">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label for="bp-website">Website URL</label>
+                <input type="url" id="bp-website" placeholder="https://yourbrand.com">
+              </div>
+            </div>
+
+            <!-- Section 2: Target Audience -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">🎯</span>
+                <h3>2. Target Audience</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="bp-target-age">Target Age Range</label>
+                  <input type="text" id="bp-target-age" placeholder="E.g., 18–34, 25–45">
+                </div>
+                <div class="form-group">
+                  <label for="bp-target-geography">Target Geography</label>
+                  <input type="text" id="bp-target-geography" placeholder="E.g., India Tier 1 & 2 cities, US & UK, Global">
+                </div>
+                <div class="form-group">
+                  <label for="bp-target-demographics">Target Demographics</label>
+                  <input type="text" id="bp-target-demographics" placeholder="E.g., Urban professionals, college students, working mothers">
+                </div>
+                <div class="form-group">
+                  <label for="bp-target-interests">Target Interests</label>
+                  <input type="text" id="bp-target-interests" placeholder="E.g., Fitness, nutrition, productivity, personal finance">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label for="bp-customer-profile">Ideal Customer Profile (ICP)</label>
+                <input type="text" id="bp-customer-profile" placeholder="E.g., Health-conscious 25–35 year old women in metros who buy organic products online">
+              </div>
+            </div>
+
+            <!-- Section 3: Campaign Details -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">📣</span>
+                <h3>3. Campaign</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="bp-campaign-objective">Campaign Objective</label>
+                  <select id="bp-campaign-objective">
+                    <option value="">Select objective…</option>
+                    <option value="Brand Awareness">Brand Awareness</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Traffic / Website Visits">Traffic / Website Visits</option>
+                    <option value="Sales / Conversions">Sales / Conversions</option>
+                    <option value="Product Launch">Product Launch</option>
+                    <option value="Lead Generation">Lead Generation</option>
+                    <option value="App Installs">App Installs</option>
+                    <option value="Content Generation / UGC">Content Generation / UGC</option>
+                    <option value="Event Promotion">Event Promotion</option>
+                    <option value="Brand Repositioning">Brand Repositioning</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="bp-campaign-description">Campaign Description (Optional)</label>
+                  <input type="text" id="bp-campaign-description" placeholder="E.g., Summer product launch targeting Gen Z on Instagram Reels">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 4: Creator Requirements -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">🧑‍🎨</span>
+                <h3>4. Creator Requirements</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="bp-preferred-niche">Preferred Creator Niche</label>
+                  <input type="text" id="bp-preferred-niche" placeholder="E.g., Fitness, Tech, Lifestyle, Food, Beauty">
+                </div>
+                <div class="form-group">
+                  <label for="bp-preferred-platform">Preferred Platform</label>
+                  <input type="text" id="bp-preferred-platform" placeholder="E.g., Instagram, YouTube, TikTok, LinkedIn">
+                </div>
+                <div class="form-group">
+                  <label for="bp-follower-range">Follower / Subscriber Range</label>
+                  <input type="text" id="bp-follower-range" placeholder="E.g., 10K–100K, 50K+, Nano (1K–10K)">
+                </div>
+                <div class="form-group">
+                  <label for="bp-engagement-expectations">Engagement Rate Expectations</label>
+                  <input type="text" id="bp-engagement-expectations" placeholder="E.g., 3%+ engagement rate, high saves & shares">
+                </div>
+                <div class="form-group">
+                  <label for="bp-creator-geography">Creator Geography</label>
+                  <input type="text" id="bp-creator-geography" placeholder="E.g., India, US, Any English-speaking country">
+                </div>
+                <div class="form-group">
+                  <label for="bp-content-format">Content Format Required</label>
+                  <input type="text" id="bp-content-format" placeholder="E.g., 60s Reel, YouTube integration, UGC-style, carousel">
+                </div>
+                <div class="form-group">
+                  <label for="bp-audience-profile">Desired Creator Audience Profile</label>
+                  <input type="text" id="bp-audience-profile" placeholder="E.g., 60%+ female, ages 18–34, interested in health & wellness">
+                </div>
+                <div class="form-group">
+                  <label for="bp-creator-style">Preferred Creator Style / Tone</label>
+                  <input type="text" id="bp-creator-style" placeholder="E.g., Educational, witty, cinematic, raw/authentic">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 5: Commercial Terms -->
+            <div class="profile-card">
+              <div class="profile-card-title">
+                <span class="section-icon">💰</span>
+                <h3>5. Commercial Terms</h3>
+              </div>
+              <div class="form-grid form-grid-2">
+                <div class="form-group">
+                  <label for="bp-campaign-budget">Total Campaign Budget</label>
+                  <input type="text" id="bp-campaign-budget" placeholder="E.g., ₹5,00,000, $10,000, Flexible">
+                </div>
+                <div class="form-group">
+                  <label for="bp-max-creator-budget">Max Budget Per Creator</label>
+                  <input type="text" id="bp-max-creator-budget" placeholder="E.g., ₹50,000 per creator, $2,000 max">
+                </div>
+                <div class="form-group">
+                  <label for="bp-deliverables">Deliverables</label>
+                  <input type="text" id="bp-deliverables" placeholder="E.g., 1 Reel + 2 Stories + 1 static post">
+                </div>
+                <div class="form-group">
+                  <label for="bp-timeline">Campaign Timeline</label>
+                  <input type="text" id="bp-timeline" placeholder="E.g., Sept 1–30, 2 weeks from briefing">
+                </div>
+                <div class="form-group">
+                  <label for="bp-usage-rights">Usage Rights Offered</label>
+                  <input type="text" id="bp-usage-rights" placeholder="E.g., 90 days organic only, 6 months paid ads, perpetual">
+                </div>
+                <div class="form-group">
+                  <label for="bp-exclusivity">Exclusivity Requirements</label>
+                  <input type="text" id="bp-exclusivity" placeholder="E.g., 30 days category exclusivity, no exclusivity, negotiable">
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="profile-actions-bar">
+              <button type="submit" id="bp-save-btn" class="btn btn-primary btn-save-profile">Save Brand Profile</button>
+              <button type="button" id="bp-reset-btn" class="btn btn-secondary">Clear Fields</button>
+              <div id="bp-save-status" class="profile-status-message"></div>
+            </div>
+
+          </form>
+
+          <!-- Section 6: Recommended Creator Profile (AI-Generated from Brand Data) -->
+          <div class="profile-card bp-recommended-card" id="bp-recommended-section">
+            <div class="bp-rec-card-header">
+              <div class="profile-card-title" style="margin-bottom:0;">
+                <span class="section-icon">🌟</span>
+                <div>
+                  <h3 style="margin:0;">Recommended Creator Profile</h3>
+                  <span class="text-muted" style="font-size:0.83rem;">Dynamically deduced from your brand positioning, target ICP, campaign objective & budget</span>
+                </div>
+              </div>
+              <button type="button" id="bp-generate-rec-btn" class="btn btn-primary btn-generate-rec">
+                <span>✨ Generate Recommended Profile</span>
+              </button>
+            </div>
+
+            <div id="bp-recommended-creator-container" class="bp-recommended-container">
+              <div class="bp-rec-empty-state">
+                <p class="text-muted">Save your brand details above and click <strong>"Generate Recommended Profile"</strong> to see the tailored creator archetype for your campaign.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -447,12 +1224,15 @@
   <script src="js/supabase.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/mascot.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/brand-profile.js"></script>
   <script src="js/gemini.js"></script>
   <script src="js/checker.js"></script>
   <script src="js/contracts.js"></script>
   <script src="js/history.js"></script>
   <script src="js/rules.js"></script>
   <script src="js/payments.js"></script>
+  <script src="js/dashboard.js"></script>
   <script src="js/decorations.js"></script>
   <script src="js/app.js"></script>
 </body>

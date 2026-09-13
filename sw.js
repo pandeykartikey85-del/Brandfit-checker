@@ -1,9 +1,12 @@
-const CACHE_NAME = 'brand-fit-checker-v3';
+const CACHE_NAME = 'brand-fit-checker-v19';
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/css/styles.css',
   '/js/app.js',
+  '/js/profile.js',
+  '/js/brand-profile.js',
+  '/js/dashboard.js',
   '/js/checker.js',
   '/js/contracts.js',
   '/js/history.js',
