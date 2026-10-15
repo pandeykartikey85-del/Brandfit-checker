@@ -184,6 +184,8 @@ body::after {
    NAVIGATION & MODE SWITCHER BAR
    ============================================ */
 .nav-bar-wrapper {
+  position: relative;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -200,6 +202,8 @@ body::after {
 
 /* Perspective Mode Switcher Pill (Creator | Brand) */
 .mode-toggle-pill {
+  position: relative;
+  z-index: 35;
   display: inline-flex;
   align-items: center;
   background: #F1F5F9;
@@ -2307,9 +2311,9 @@ input:focus {
 
 .mascot-container {
   position: fixed;
-  top: 85px;
-  right: max(16px, calc(50vw - 380px - 140px));
-  z-index: 50;
+  top: 235px;
+  right: 28px;
+  z-index: 20;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -2523,28 +2527,28 @@ input:focus {
    (Desktop, Laptop, Tablet, Mobile, Landscape)
    ============================================ */
 
-/* Large Desktop & Mac (>= 1280px) */
+/* Large Desktop & Wide Screens (>= 1280px) */
 @media (min-width: 1280px) {
   .mascot-container {
-    top: 90px;
-    right: max(20px, calc(50vw - 380px - 145px));
+    top: 235px;
+    right: 28px;
     transform: scale(1);
-    transform-origin: top center;
+    transform-origin: top right;
   }
 }
 
-/* Laptop & Compact Desktop (1024px to 1279px) */
-@media (min-width: 1024px) and (max-width: 1279px) {
+/* Compact Desktop & Laptop (1080px to 1279px) */
+@media (min-width: 1080px) and (max-width: 1279px) {
   .mascot-container {
-    top: 85px;
-    right: max(12px, calc(50vw - 380px - 125px));
-    transform: scale(0.88);
-    transform-origin: top center;
+    top: 235px;
+    right: 20px;
+    transform: scale(0.85);
+    transform-origin: top right;
   }
 }
 
-/* Tablet Landscape & Portrait (< 1024px): Floating Corner Companion */
-@media (max-width: 1023px) {
+/* Tablet Landscape, Portrait & Touch Devices (< 1080px): Floating Corner Companion */
+@media (max-width: 1079px) {
   .mascot-container {
     top: auto;
     bottom: calc(18px + env(safe-area-inset-bottom, 0px));
